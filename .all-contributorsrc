@@ -1,0 +1,54 @@
+{
+  "projectName": "APTRS",
+  "projectOwner": "APTRS",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "contributorsSortAlphabetically": false,
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "none",
+  "contributors": [
+    {
+      "login": "anof-cyber",
+      "name": "Sourav Kalal",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39705906?v=4",
+      "profile": "https://souravkalal.tech/",
+      "contributions": [
+        "maintenance"
+      ]
+    },
+    {
+      "login": "djscruggs",
+      "name": "DJ Scruggs",
+      "avatar_url": "https://avatars.githubusercontent.com/u/41671?v=4",
+      "profile": "https://github.com/djscruggs",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "noraj",
+      "name": "Alexandre ZANNI",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16578570?v=4",
+      "profile": "https://github.com/noraj",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "0xdeviner",
+      "name": "Hitesh Patra",
+      "avatar_url": "https://avatars.githubusercontent.com/u/61959752?v=4",
+      "profile": "https://github.com/0xdeviner",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": false,
+  "commitType": "docs"
+}
