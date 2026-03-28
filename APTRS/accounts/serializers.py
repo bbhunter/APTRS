@@ -230,6 +230,12 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
         # Set is_staff to True by default for new user
         validated_data['is_staff'] = True
+
+        # Only a superuser can create another superuser
+        request = self.context.get('request')
+        if not (request and request.user.is_superuser):
+            validated_data.pop('is_superuser', None)
+
         groups_data = validated_data.pop('groups', [])#Extract groups
         if 'password' not in validated_data:
             raise serializers.ValidationError("Password is required for creating a new user.")
@@ -250,6 +256,11 @@ class CustomUserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # Set is_staff to True during update
         validated_data['is_staff'] = True
+
+        # Only a superuser can create another superuser
+        request = self.context.get('request')
+        if not (request and request.user.is_superuser):
+            validated_data.pop('is_superuser', None)
 
         if 'password' in validated_data:
             if not validated_data['password']:
