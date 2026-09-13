@@ -1,5 +1,6 @@
 import io
 import logging
+import time
 import urllib
 import os
 import requests
@@ -28,6 +29,7 @@ from customers.models import Company
 from .models import (PrjectScope, Project, ProjectRetest, Vulnerability,
                      Vulnerableinstance)
 from utils.doc_style import get_subdoc ,main_doc_style
+from lib.htmldocx import IMAGE_FETCH_TIMEOUT, MAX_IMAGE_BYTES, ALLOWED_IMAGE_CONTENT_TYPES
 logger = logging.getLogger(__name__)
 logger = logging.getLogger('weasyprint')
 
@@ -290,34 +292,50 @@ def is_whitelisted(url):
 
 
 
+def _fetch_capped(url, headers=None):
+    """
+    Fetch a URL with the same bounds as lib.htmldocx.fetch_image: connect/read
+    timeout, a byte ceiling enforced both via Content-Length and while
+    streaming, and a Content-Type allowlist. WeasyPrint treats a raising
+    url_fetcher the same as a missing image, so callers don't need to
+    special-case failures here.
+    """
+    response = requests.get(url, headers=headers, verify=False, stream=True, timeout=IMAGE_FETCH_TIMEOUT)
+    with response:
+        response.raise_for_status()
+
+        content_type = response.headers.get('Content-Type', '').split(';')[0].strip().lower()
+        if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+            raise ValueError(f'Disallowed Content-Type {content_type!r} for {url!r}')
+
+        content_length = response.headers.get('Content-Length')
+        if content_length is not None and content_length.isdigit() and int(content_length) > MAX_IMAGE_BYTES:
+            raise ValueError(f'Image too large: {url!r}')
+
+        body = io.BytesIO()
+        deadline = time.monotonic() + sum(IMAGE_FETCH_TIMEOUT)
+        for chunk in response.iter_content(chunk_size=65536):
+            if time.monotonic() > deadline:
+                raise ValueError(f'Fetch exceeded deadline: {url!r}')
+            body.write(chunk)
+            if body.tell() > MAX_IMAGE_BYTES:
+                raise ValueError(f'Image too large: {url!r}')
+
+        return {
+            "string": body.getvalue(),
+            "mime_type": content_type,
+            "encoding": response.encoding,
+            "redirected_url": response.url
+        }
+
+
 def my_fetcher(url):
 
     # Check if the URL is whitelisted
-    if is_whitelisted(url):
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        if "/api/project/getimage/" in url:
-            headers = {
-                "Authorization": f"Bearer {token}"
-            }
-            response = requests.get(url, headers=headers, verify=False)
-            response.raise_for_status()
-
-            return {
-                "string": response.content,
-                "mime_type": response.headers.get("Content-Type", "image/jpeg"),
-                "encoding": response.encoding,
-                "redirected_url": response.url
-            }
-
-        else:
-            response = requests.get(url, verify=False)
-            response.raise_for_status()
-            mime_type = response.headers.get("Content-Type", "application/octet-stream")
-            return {
-                "string": response.content,
-                "mime_type": mime_type,
-                "encoding": response.encoding,
-                "redirected_url": response.url
-            }
-    else:
+    if not is_whitelisted(url):
         raise ValueError(f'URL is Not WhiteListed for: {url!r}')
+
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+    if "/api/project/getimage/" in url:
+        return _fetch_capped(url, headers={"Authorization": f"Bearer {token}"})
+    return _fetch_capped(url)
